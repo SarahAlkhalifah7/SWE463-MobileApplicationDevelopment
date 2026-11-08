@@ -5,6 +5,13 @@ import 'package:image_picker/image_picker.dart';
 
 import 'account_created.dart';
 
+import 'dart:math';
+
+import '../models/child.dart';
+import '../models/parent.dart';
+
+import '../services/account_storage.dart';
+
 class ParentSignUpScreen extends StatefulWidget {
   const ParentSignUpScreen({super.key});
 
@@ -526,8 +533,77 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                       height: 52,
 
                       child: FilledButton(
-                        onPressed: () {
+                        onPressed: () async {
                           if (_formKey.currentState!.validate()) {
+                            final existingAccounts =
+                                await AccountStorage.getAccounts();
+
+                            final Set<String> usedCodes = {};
+
+                            for (final account in existingAccounts) {
+                              for (final child in account.children) {
+                                usedCodes.add(child.accessCode);
+                              }
+                            }
+
+                            final List<Child> children = [];
+
+                            for (int i = 0; i < numberOfChildren; i++) {
+                              final code = _generateChildCode(usedCodes);
+
+                              usedCodes.add(code);
+
+                              children.add(
+                                Child(
+                                  name: childControllers[i].text.trim(),
+
+                                  // For now we save the selected icon.
+                                  // We will handle saved photos separately later.
+                                  avatar: selectedAvatars[i],
+
+                                  accessCode: code,
+                                ),
+                              );
+                            }
+
+                            final parent = ParentAccount(
+                              name: _nameController.text.trim(),
+                              email: _emailController.text.trim(),
+                              password: _passwordController.text,
+                              children: children,
+                            );
+
+                            final created = await AccountStorage.createAccount(
+                              parent,
+                            );
+
+                            if (!context.mounted) return;
+
+                            if (!created) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'An account with this email already exists.',
+                                  ),
+                                ),
+                              );
+
+                              return;
+                            }
+
+                            if (!context.mounted) return;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Account saved successfully!'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+
+                            await Future.delayed(const Duration(seconds: 1));
+
+                            if (!context.mounted) return;
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -561,5 +637,17 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
         ),
       ),
     );
+  }
+
+  String _generateChildCode(Set<String> usedCodes) {
+    final random = Random();
+
+    String code;
+
+    do {
+      code = (1000 + random.nextInt(9000)).toString();
+    } while (usedCodes.contains(code));
+
+    return code;
   }
 }

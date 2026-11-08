@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../models/parent.dart';
+import 'parent_dashboard.dart';
 import 'placeholder.dart';
 
 class ParentModeScreen extends StatefulWidget {
-  const ParentModeScreen({super.key});
+  const ParentModeScreen({super.key, required this.parent});
+
+  final ParentAccount parent;
 
   @override
   State<ParentModeScreen> createState() => _ParentModeScreenState();
@@ -12,44 +16,63 @@ class ParentModeScreen extends StatefulWidget {
 class _ParentModeScreenState extends State<ParentModeScreen> {
   int selectedIndex = 0;
 
-  final screens = const [
-    PlaceholderScreen(title: 'Parent Dashboard'),
-    PlaceholderScreen(title: 'Task Management'),
-    PlaceholderScreen(title: 'Rewards Management'),
-    PlaceholderScreen(title: 'Parent Profile'),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    // Screens for the bottom navigation
+    final screens = [
+      // Real Parent Dashboard
+      ParentDashboard(parent: widget.parent),
+
+      // We will implement these later
+      const PlaceholderScreen(title: 'Task Management'),
+
+      const PlaceholderScreen(title: 'Rewards Management'),
+
+      const PlaceholderScreen(title: 'Parent Profile'),
+    ];
+
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF9F0),
+
       appBar: AppBar(
-        title: const Text('Taskarro Parent'),
-        backgroundColor: Colors.transparent,
+        title: const Text(
+          'Taskarro Parent',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
       ),
+
       body: screens[selectedIndex],
+
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,
+
         onDestinationSelected: (index) {
           setState(() {
             selectedIndex = index;
           });
         },
+
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
+
           NavigationDestination(
             icon: Icon(Icons.task_outlined),
             selectedIcon: Icon(Icons.task),
             label: 'Tasks',
           ),
+
           NavigationDestination(
             icon: Icon(Icons.card_giftcard_outlined),
             selectedIcon: Icon(Icons.card_giftcard),
             label: 'Rewards',
           ),
+
           NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/account_storage.dart';
 import 'parent_mode.dart';
 import 'parent_signup.dart';
 
@@ -161,25 +162,50 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
 
                       child: FilledButton(
                         onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
+                          // First validate the form
+                          if (!_formKey.currentState!.validate()) {
+                            return;
+                          }
+
+                          // Search for the saved account
+                          final account = await AccountStorage.login(
+                            email: _emailController.text.trim(),
+                            password: _passwordController.text,
+                          );
+
+                          if (!context.mounted) return;
+
+                          // Wrong email or password
+                          if (account == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Login information is valid'),
-                                duration: Duration(seconds: 1),
+                                content: Text('Incorrect email or password.'),
                               ),
                             );
 
-                            await Future.delayed(const Duration(seconds: 1));
-
-                            if (!context.mounted) return;
-
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ParentModeScreen(),
-                              ),
-                            );
+                            return;
                           }
+
+                          // Correct login
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Login successful!'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+
+                          // Show message for one second
+                          await Future.delayed(const Duration(seconds: 1));
+
+                          if (!context.mounted) return;
+
+                          // Open this parent's account
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ParentModeScreen(parent: account),
+                            ),
+                          );
                         },
 
                         child: const Text(
