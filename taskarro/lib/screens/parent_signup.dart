@@ -556,12 +556,9 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                               children.add(
                                 Child(
                                   name: childControllers[i].text.trim(),
-
-                                  // For now we save the selected icon.
-                                  // We will handle saved photos separately later.
                                   avatar: selectedAvatars[i],
-
                                   accessCode: code,
+                                  photoPath: selectedPhotos[i]?.path,
                                 ),
                               );
                             }

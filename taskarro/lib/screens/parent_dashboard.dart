@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../models/parent.dart';
 
+import 'dart:io';
+
+import 'add_child.dart';
+
 class ParentDashboard extends StatelessWidget {
-  const ParentDashboard({super.key, required this.parent});
+  const ParentDashboard({
+    super.key,
+    required this.parent,
+    required this.onParentUpdated,
+  });
 
   final ParentAccount parent;
+  final ValueChanged<ParentAccount> onParentUpdated;
 
   @override
   Widget build(BuildContext context) {
@@ -82,10 +91,30 @@ class ParentDashboard extends StatelessWidget {
                                 color: Color(0xFFF2EFFF),
                                 shape: BoxShape.circle,
                               ),
-                              child: Text(
-                                child.avatar,
-                                style: const TextStyle(fontSize: 34),
-                              ),
+                              child: child.photoPath != null
+                                  ? ClipOval(
+                                      child: Image.file(
+                                        File(child.photoPath!),
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Center(
+                                                child: Text(
+                                                  child.avatar,
+                                                  style: const TextStyle(
+                                                    fontSize: 34,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                      ),
+                                    )
+                                  : Text(
+                                      child.avatar,
+                                      style: const TextStyle(fontSize: 34),
+                                    ),
                             ),
 
                             const SizedBox(width: 14),
@@ -232,8 +261,17 @@ class ParentDashboard extends StatelessWidget {
                   width: double.infinity,
                   height: 52,
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      // Add Child screen later
+                    onPressed: () async {
+                      final updatedParent = await Navigator.push<ParentAccount>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AddChildScreen(parent: parent),
+                        ),
+                      );
+
+                      if (updatedParent != null) {
+                        onParentUpdated(updatedParent);
+                      }
                     },
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('Add Child'),

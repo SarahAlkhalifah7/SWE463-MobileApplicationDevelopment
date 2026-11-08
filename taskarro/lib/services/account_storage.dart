@@ -69,4 +69,20 @@ class AccountStorage {
 
     return null;
   }
+
+  static Future<void> updateAccount(ParentAccount updatedAccount) async {
+    final accounts = await getAccounts();
+
+    final index = accounts.indexWhere(
+      (account) =>
+          account.email.trim().toLowerCase() ==
+          updatedAccount.email.trim().toLowerCase(),
+    );
+
+    if (index != -1) {
+      accounts[index] = updatedAccount;
+
+      await _saveAccounts(accounts);
+    }
+  }
 }

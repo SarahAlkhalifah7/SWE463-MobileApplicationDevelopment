@@ -15,13 +15,27 @@ class ParentModeScreen extends StatefulWidget {
 
 class _ParentModeScreenState extends State<ParentModeScreen> {
   int selectedIndex = 0;
+  late ParentAccount currentParent;
+
+  @override
+  void initState() {
+    super.initState();
+    currentParent = widget.parent;
+  }
 
   @override
   Widget build(BuildContext context) {
     // Screens for the bottom navigation
     final screens = [
       // Real Parent Dashboard
-      ParentDashboard(parent: widget.parent),
+      ParentDashboard(
+        parent: currentParent,
+        onParentUpdated: (updatedParent) {
+          setState(() {
+            currentParent = updatedParent;
+          });
+        },
+      ),
 
       // We will implement these later
       const PlaceholderScreen(title: 'Task Management'),
