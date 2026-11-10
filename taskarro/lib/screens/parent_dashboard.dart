@@ -6,6 +6,8 @@ import 'dart:io';
 
 import 'add_child.dart';
 
+import 'package:flutter/services.dart';
+
 class ParentDashboard extends StatelessWidget {
   const ParentDashboard({
     super.key,
@@ -134,12 +136,54 @@ class ParentDashboard extends StatelessWidget {
 
                                   const SizedBox(height: 5),
 
-                                  Text(
-                                    'Child Code: ${child.accessCode}',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'Child Code: ${child.accessCode}',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+
+                                      IconButton(
+                                        tooltip: 'Copy child code',
+                                        visualDensity: VisualDensity.compact,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        icon: const Icon(
+                                          Icons.copy_rounded,
+                                          size: 18,
+                                        ),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        onPressed: () async {
+                                          await Clipboard.setData(
+                                            ClipboardData(
+                                              text: child.accessCode,
+                                            ),
+                                          );
+
+                                          if (!context.mounted) return;
+
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                '${child.name}\'s code copied!',
+                                              ),
+                                              duration: const Duration(
+                                                seconds: 1,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
