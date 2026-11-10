@@ -4,6 +4,7 @@ import '../models/child.dart';
 import 'child_tasks.dart';
 import 'placeholder.dart';
 import 'child_challenges.dart';
+import 'child_badges.dart';
 
 class ChildModeScreen extends StatefulWidget {
   const ChildModeScreen({
@@ -27,9 +28,7 @@ class _ChildModeScreenState extends State<ChildModeScreen> {
   ChildTasksScreen(child: widget.child),
   ChildProgressScreen(child: widget.child),
   ChildChallengesScreen(child: widget.child),
-  const PlaceholderScreen(
-    title: 'Achievements / Badges',
-  ),
+  ChildBadgesScreen(child: widget.child),
 ];
 
     return Scaffold(
