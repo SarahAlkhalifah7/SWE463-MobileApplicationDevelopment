@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'child_tasks.dart';
 import 'placeholder.dart';
 
 class ChildModeScreen extends StatefulWidget {
@@ -13,10 +14,16 @@ class _ChildModeScreenState extends State<ChildModeScreen> {
   int selectedIndex = 0;
 
   final screens = const [
-    PlaceholderScreen(title: 'Child Home / Daily Tasks'),
-    PlaceholderScreen(title: 'Reward Progress'),
-    PlaceholderScreen(title: 'Streak and Weekly Challenge'),
-    PlaceholderScreen(title: 'Achievements / Badges'),
+    ChildTasksScreen(),
+    PlaceholderScreen(
+      title: 'Reward Progress',
+    ),
+    PlaceholderScreen(
+      title: 'Streak and Weekly Challenge',
+    ),
+    PlaceholderScreen(
+      title: 'Achievements / Badges',
+    ),
   ];
 
   @override
@@ -46,8 +53,12 @@ class _ChildModeScreenState extends State<ChildModeScreen> {
             label: 'Progress',
           ),
           NavigationDestination(
-            icon: Icon(Icons.local_fire_department_outlined),
-            selectedIcon: Icon(Icons.local_fire_department),
+            icon: Icon(
+              Icons.local_fire_department_outlined,
+            ),
+            selectedIcon: Icon(
+              Icons.local_fire_department,
+            ),
             label: 'Challenges',
           ),
           NavigationDestination(
