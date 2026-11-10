@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/parent.dart';
 import 'parent_dashboard.dart';
 import 'placeholder.dart';
+import 'parent_profile.dart';
 
 class ParentModeScreen extends StatefulWidget {
   const ParentModeScreen({super.key, required this.parent});
@@ -42,7 +43,7 @@ class _ParentModeScreenState extends State<ParentModeScreen> {
 
       const PlaceholderScreen(title: 'Rewards Management'),
 
-      const PlaceholderScreen(title: 'Parent Profile'),
+      ParentProfileScreen(parent: currentParent),
     ];
 
     return Scaffold(

@@ -66,5 +66,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+<string>Taskarro needs camera access to take a profile photo for your child.</string>
+
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Taskarro needs photo library access to choose a profile photo for your child.</string>
 </dict>
 </plist>
