@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'child_progress.dart';
 import '../models/child.dart';
 import 'child_tasks.dart';
 import 'placeholder.dart';
@@ -21,18 +21,17 @@ class _ChildModeScreenState extends State<ChildModeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    
     final screens = <Widget>[
-      ChildTasksScreen(child: widget.child),
-      const PlaceholderScreen(
-        title: 'Reward Progress',
-      ),
-      const PlaceholderScreen(
-        title: 'Streak and Weekly Challenge',
-      ),
-      const PlaceholderScreen(
-        title: 'Achievements / Badges',
-      ),
-    ];
+  ChildTasksScreen(child: widget.child),     // Home
+  ChildProgressScreen(child: widget.child),  // Progress
+  const PlaceholderScreen(
+    title: 'Challenges',
+  ),
+  const PlaceholderScreen(
+    title: 'Achievements / Badges',
+  ),
+];
 
     return Scaffold(
       appBar: AppBar(

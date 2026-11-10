@@ -143,18 +143,49 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Child added successfully!'),
-        duration: Duration(seconds: 1),
+    await showDialog<void>(
+  context: context,
+  barrierDismissible: false,
+  builder: (dialogContext) {
+    return AlertDialog(
+      title: const Text('Child Added Successfully!'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Give this access code to your child:',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            code,
+            style: const TextStyle(
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 8,
+              color: Color(0xFF7563E8),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Use this code to enter Child Mode.',
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Done'),
+        ),
+      ],
     );
+  },
+);
 
-    await Future.delayed(const Duration(seconds: 1));
+if (!mounted) return;
 
-    if (!mounted) return;
-
-    Navigator.pop(context, updatedParent);
+Navigator.pop(context, updatedParent);
   }
 
   @override
