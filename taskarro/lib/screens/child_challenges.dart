@@ -1,0 +1,195 @@
+import 'package:flutter/material.dart';
+
+import '../models/child.dart';
+
+class ChildChallengesScreen extends StatelessWidget {
+  const ChildChallengesScreen({
+    super.key,
+    required this.child,
+  });
+
+  final Child child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFF9F0),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFF9F0),
+        elevation: 0,
+        foregroundColor: const Color(0xFF292640),
+        title: const Text(
+          'Challenges',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Weekly Challenge',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF292640),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Keep going, ${child.name}!',
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Card(
+              color: const Color(0xFFEDE8FF),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Text(
+                          '🔥',
+                          style: TextStyle(fontSize: 36),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Complete 5 days this week',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF292640),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Weekly progress',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF292640),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      value: 0.8,
+                      minHeight: 12,
+                      borderRadius: BorderRadius.circular(10),
+                      backgroundColor: Colors.white,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFF7563E8),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      '4 of 5 days completed',
+                      style: TextStyle(
+                        color: Color(0xFF7563E8),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            Card(
+              color: const Color(0xFFFFEEB5),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Text(
+                      '🏆',
+                      style: TextStyle(fontSize: 40),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Reward waiting!',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF292640),
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'Complete one more day to unlock your weekly reward.',
+                            style: TextStyle(
+                              color: Color(0xFF6E6240),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            const Text(
+              'Current streak',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF292640),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: const BorderSide(
+                  color: Color(0xFFE5DFFF),
+                ),
+              ),
+              child: const ListTile(
+                leading: Text(
+                  '🔥',
+                  style: TextStyle(fontSize: 32),
+                ),
+                title: Text(
+                  '4 day streak',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text('Complete today’s tasks to keep it going!'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
