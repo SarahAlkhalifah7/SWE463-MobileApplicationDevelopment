@@ -43,7 +43,14 @@ class _ParentModeScreenState extends State<ParentModeScreen> {
 
       const PlaceholderScreen(title: 'Rewards Management'),
 
-      ParentProfileScreen(parent: currentParent),
+      ParentProfileScreen(
+        parent: currentParent,
+        onParentUpdated: (updatedParent) {
+          setState(() {
+            currentParent = updatedParent;
+          });
+        },
+      ),
     ];
 
     return Scaffold(

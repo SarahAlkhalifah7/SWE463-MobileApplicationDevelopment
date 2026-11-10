@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
+
 import 'child_progress.dart';
 import '../models/child.dart';
 import 'child_tasks.dart';
-import 'placeholder.dart';
 import 'child_challenges.dart';
 import 'child_badges.dart';
 
 class ChildModeScreen extends StatefulWidget {
-  const ChildModeScreen({
-    super.key,
-    required this.child,
-  });
+  const ChildModeScreen({super.key, required this.child});
 
   final Child child;
 
@@ -23,13 +20,12 @@ class _ChildModeScreenState extends State<ChildModeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    
     final screens = <Widget>[
-  ChildTasksScreen(child: widget.child),
-  ChildProgressScreen(child: widget.child),
-  ChildChallengesScreen(child: widget.child),
-  ChildBadgesScreen(child: widget.child),
-];
+      ChildTasksScreen(child: widget.child),
+      ChildProgressScreen(child: widget.child),
+      ChildChallengesScreen(child: widget.child),
+      ChildBadgesScreen(child: widget.child),
+    ];
 
     return Scaffold(
       appBar: AppBar(

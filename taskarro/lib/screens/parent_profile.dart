@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../models/parent.dart';
 import 'welcome_screen.dart';
-
-import 'package:flutter/services.dart';
+import '../models/child.dart';
+import '../services/account_storage.dart';
+import 'edit_child.dart';
 
 class ParentProfileScreen extends StatelessWidget {
-  const ParentProfileScreen({super.key, required this.parent});
+  const ParentProfileScreen({
+    super.key,
+    required this.parent,
+    required this.onParentUpdated,
+  });
 
   final ParentAccount parent;
-
+  final ValueChanged<ParentAccount> onParentUpdated;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -161,6 +166,7 @@ class ParentProfileScreen extends StatelessWidget {
                           const SizedBox(width: 14),
 
                           // Child information
+                          // Child information
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,30 +188,72 @@ class ParentProfileScreen extends StatelessWidget {
                                     color: Colors.grey,
                                   ),
                                 ),
-                                IconButton(
-                                  tooltip: 'Copy child code',
-                                  icon: const Icon(
-                                    Icons.copy_rounded,
-                                    size: 22,
-                                  ),
-                                  color: Theme.of(context).colorScheme.primary,
-                                  onPressed: () async {
-                                    await Clipboard.setData(
-                                      ClipboardData(text: child.accessCode),
-                                    );
-
-                                    if (!context.mounted) return;
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Child code copied!'),
-                                        duration: Duration(seconds: 1),
-                                      ),
-                                    );
-                                  },
-                                ),
                               ],
                             ),
+                          ),
+
+                          // Copy + Edit buttons
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Edit child
+                              IconButton(
+                                tooltip: 'Edit child',
+                                icon: const Icon(Icons.edit_outlined, size: 22),
+                                color: Theme.of(context).colorScheme.primary,
+                                onPressed: () async {
+                                  final updatedChild =
+                                      await Navigator.push<Child>(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              EditChildScreen(child: child),
+                                        ),
+                                      );
+
+                                  if (updatedChild == null) {
+                                    return;
+                                  }
+
+                                  // Replace the edited child
+                                  final updatedChildren = parent.children.map((
+                                    currentChild,
+                                  ) {
+                                    if (currentChild.accessCode ==
+                                        child.accessCode) {
+                                      return updatedChild;
+                                    }
+
+                                    return currentChild;
+                                  }).toList();
+
+                                  // Create updated parent
+                                  final updatedParent = ParentAccount(
+                                    name: parent.name,
+                                    email: parent.email,
+                                    password: parent.password,
+                                    children: updatedChildren,
+                                  );
+
+                                  // Save changes
+                                  await AccountStorage.updateAccount(
+                                    updatedParent,
+                                  );
+
+                                  // Update Home + Profile
+                                  onParentUpdated(updatedParent);
+
+                                  if (!context.mounted) return;
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Child profile updated!'),
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ],
                       ),
