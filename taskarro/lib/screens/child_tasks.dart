@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-
+import '../models/child.dart';
 import '../models/task.dart';
 
 class ChildTasksScreen extends StatefulWidget {
-  const ChildTasksScreen({super.key});
+  const ChildTasksScreen({
+  super.key,
+  required this.child,
+});
+
+final Child child;
 
   @override
   State<ChildTasksScreen> createState() => _ChildTasksScreenState();
@@ -63,8 +68,8 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
           children: [
-            const Text(
-              'Hey, Adam! 👋',
+             Text(
+              'Hey, ${widget.child.name}! 👋',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,

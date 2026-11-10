@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../models/child.dart';
 import 'child_tasks.dart';
 import 'placeholder.dart';
 
 class ChildModeScreen extends StatefulWidget {
-  const ChildModeScreen({super.key});
+  const ChildModeScreen({
+    super.key,
+    required this.child,
+  });
+
+  final Child child;
 
   @override
   State<ChildModeScreen> createState() => _ChildModeScreenState();
@@ -13,21 +19,21 @@ class ChildModeScreen extends StatefulWidget {
 class _ChildModeScreenState extends State<ChildModeScreen> {
   int selectedIndex = 0;
 
-  final screens = const [
-    ChildTasksScreen(),
-    PlaceholderScreen(
-      title: 'Reward Progress',
-    ),
-    PlaceholderScreen(
-      title: 'Streak and Weekly Challenge',
-    ),
-    PlaceholderScreen(
-      title: 'Achievements / Badges',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final screens = <Widget>[
+      ChildTasksScreen(child: widget.child),
+      const PlaceholderScreen(
+        title: 'Reward Progress',
+      ),
+      const PlaceholderScreen(
+        title: 'Streak and Weekly Challenge',
+      ),
+      const PlaceholderScreen(
+        title: 'Achievements / Badges',
+      ),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Taskarro Child'),
@@ -53,12 +59,8 @@ class _ChildModeScreenState extends State<ChildModeScreen> {
             label: 'Progress',
           ),
           NavigationDestination(
-            icon: Icon(
-              Icons.local_fire_department_outlined,
-            ),
-            selectedIcon: Icon(
-              Icons.local_fire_department,
-            ),
+            icon: Icon(Icons.local_fire_department_outlined),
+            selectedIcon: Icon(Icons.local_fire_department),
             label: 'Challenges',
           ),
           NavigationDestination(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'child_mode.dart';
+import 'child_code_login.dart';
 import 'parent_login.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -91,7 +91,7 @@ class WelcomeScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const ChildModeScreen(),
+                            builder: (_) => const ChildCodeLoginScreen(),
                           ),
                         );
                       },
