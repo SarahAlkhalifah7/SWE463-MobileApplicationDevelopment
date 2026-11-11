@@ -4,6 +4,7 @@ import '../models/parent.dart';
 import 'parent_dashboard.dart';
 import 'placeholder.dart';
 import 'parent_profile.dart';
+import 'task_management.dart';
 
 class ParentModeScreen extends StatefulWidget {
   const ParentModeScreen({super.key, required this.parent});
@@ -38,9 +39,9 @@ class _ParentModeScreenState extends State<ParentModeScreen> {
         },
       ),
 
-      // We will implement these later
-      const PlaceholderScreen(title: 'Task Management'),
+      TaskManagementScreen(parent: currentParent),
 
+      // We will implement this later
       const PlaceholderScreen(title: 'Rewards Management'),
 
       ParentProfileScreen(
