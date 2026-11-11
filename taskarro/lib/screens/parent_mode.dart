@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../models/parent.dart';
 import 'parent_dashboard.dart';
-import 'placeholder.dart';
 import 'parent_profile.dart';
+import 'rewards_management.dart';
 import 'task_management.dart';
 
 class ParentModeScreen extends StatefulWidget {
@@ -41,8 +41,7 @@ class _ParentModeScreenState extends State<ParentModeScreen> {
 
       TaskManagementScreen(parent: currentParent),
 
-      // We will implement this later
-      const PlaceholderScreen(title: 'Rewards Management'),
+      RewardsManagementScreen(parent: currentParent),
 
       ParentProfileScreen(
         parent: currentParent,
