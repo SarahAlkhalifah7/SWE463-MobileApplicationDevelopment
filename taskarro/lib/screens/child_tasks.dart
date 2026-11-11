@@ -33,7 +33,6 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
       childId: 'demo-child',
       title: 'Pack school bag',
       stars: 5,
-      dueLabel: 'Tonight',
     ),
   ];
 
