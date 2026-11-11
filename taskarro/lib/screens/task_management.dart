@@ -108,6 +108,66 @@ class _TaskManagementScreenState extends State<TaskManagementScreen> {
     }
   }
 
+  // Open the same form in edit mode
+  Future<void> _openEditTask(Task task) async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddEditTaskScreen(
+          children: widget.parent.children,
+          selectedChild: _selectedChild!,
+          task: task,
+        ),
+      ),
+    );
+
+    if (saved == true) {
+      _loadTasks();
+    }
+  }
+
+  // Ask the parent before deleting
+  Future<void> _confirmDelete(Task task) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete task?'),
+        content: Text('"${task.title}" will be removed for good.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await TaskStorage.deleteTask(task.id);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('"${task.title}" deleted')));
+
+    _loadTasks();
+  }
+
+  // Quick priority change without opening the full form
+  Future<void> _changePriority(Task task, TaskPriority priority) async {
+    if (task.priority == priority) return;
+
+    await TaskStorage.updateTask(task.copyWith(priority: priority));
+
+    _loadTasks();
+  }
+
   int get _pendingCount => _tasks.where((task) => !task.isCompleted).length;
 
   int get _completedCount => _tasks.where((task) => task.isCompleted).length;
@@ -358,7 +418,16 @@ class _TaskManagementScreenState extends State<TaskManagementScreen> {
     }
 
     return Column(
-      children: tasks.map((task) => _TaskCard(task: task)).toList(),
+      children: tasks
+          .map(
+            (task) => _TaskCard(
+              task: task,
+              onEdit: () => _openEditTask(task),
+              onDelete: () => _confirmDelete(task),
+              onPriorityChanged: (priority) => _changePriority(task, priority),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -511,9 +580,17 @@ class _SummaryBox extends StatelessWidget {
 
 // One task in the list
 class _TaskCard extends StatelessWidget {
-  const _TaskCard({required this.task});
+  const _TaskCard({
+    required this.task,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onPriorityChanged,
+  });
 
   final Task task;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final ValueChanged<TaskPriority> onPriorityChanged;
 
   Color get _priorityColor {
     switch (task.priority) {
@@ -537,81 +614,140 @@ class _TaskCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE8E3F5)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          Text(task.icon, style: const TextStyle(fontSize: 28)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title + stars
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        task.title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: task.isCompleted
-                              ? Colors.grey
-                              : const Color(0xFF29283A),
-                          decoration: task.isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF4D6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '⭐ ${task.stars}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
+          _buildDetails(),
+          const Divider(height: 24, color: Color(0xFFF0EDF8)),
+          _buildActions(),
+        ],
+      ),
+    );
+  }
 
-                // Priority, due date and status
-                Row(
-                  children: [
-                    Icon(Icons.flag, size: 16, color: _priorityColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      task.priority.label,
-                      style: TextStyle(
-                        color: _priorityColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                    ),
-                    Text(
-                      '  ·  Due ${task.dueLabel}',
-                      style: const TextStyle(color: Colors.grey, fontSize: 13),
-                    ),
-                    if (task.recurrence != TaskRecurrence.never) ...[
-                      const SizedBox(width: 6),
-                      const Icon(Icons.repeat, size: 14, color: Colors.grey),
-                    ],
-                    const Spacer(),
-                    _StatusChip(isCompleted: task.isCompleted),
-                  ],
+  // Edit · Delete · Prioritize row at the bottom of the card
+  Widget _buildActions() {
+    const purple = Color(0xFF7563E8);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        TextButton.icon(
+          onPressed: onEdit,
+          icon: const Icon(Icons.edit_outlined, size: 18),
+          label: const Text('Edit'),
+          style: TextButton.styleFrom(foregroundColor: purple),
+        ),
+        TextButton.icon(
+          onPressed: onDelete,
+          icon: const Icon(Icons.delete_outline, size: 18),
+          label: const Text('Delete'),
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+        ),
+        PopupMenuButton<TaskPriority>(
+          onSelected: onPriorityChanged,
+          itemBuilder: (context) => TaskPriority.values
+              .map(
+                (priority) => CheckedPopupMenuItem<TaskPriority>(
+                  value: priority,
+                  checked: priority == task.priority,
+                  child: Text(priority.label),
+                ),
+              )
+              .toList(),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Icon(Icons.flag_outlined, size: 18, color: purple),
+                SizedBox(width: 6),
+                Text(
+                  'Prioritize',
+                  style: TextStyle(color: purple, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+
+  // Icon, title, stars, priority, due date and status
+  Widget _buildDetails() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(task.icon, style: const TextStyle(fontSize: 28)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title + stars
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      task.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: task.isCompleted
+                            ? Colors.grey
+                            : const Color(0xFF29283A),
+                        decoration: task.isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF4D6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '⭐ ${task.stars}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Priority, due date and status
+              Row(
+                children: [
+                  Icon(Icons.flag, size: 16, color: _priorityColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    task.priority.label,
+                    style: TextStyle(
+                      color: _priorityColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    '  ·  Due ${task.dueLabel}',
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                  if (task.recurrence != TaskRecurrence.never) ...[
+                    const SizedBox(width: 6),
+                    const Icon(Icons.repeat, size: 14, color: Colors.grey),
+                  ],
+                  const Spacer(),
+                  _StatusChip(isCompleted: task.isCompleted),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
