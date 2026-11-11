@@ -4,6 +4,7 @@ import '../models/child.dart';
 import '../models/parent.dart';
 import '../models/task.dart';
 import '../services/task_storage.dart';
+import 'add_edit_task.dart';
 
 // The three filter tabs at the top of the task list
 enum TaskFilter { all, pending, completed }
@@ -90,11 +91,21 @@ class _TaskManagementScreenState extends State<TaskManagementScreen> {
     _loadTasks();
   }
 
-  // Will open the Add Task screen (next step)
-  void _openAddTask() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add Task screen is coming next!')),
+  // Open the Add Task screen and reload the list if a task was saved
+  Future<void> _openAddTask() async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddEditTaskScreen(
+          children: widget.parent.children,
+          selectedChild: _selectedChild!,
+        ),
+      ),
     );
+
+    if (saved == true) {
+      _loadTasks();
+    }
   }
 
   int get _pendingCount => _tasks.where((task) => !task.isCompleted).length;
