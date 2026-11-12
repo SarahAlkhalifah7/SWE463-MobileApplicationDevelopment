@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/child.dart';
+import '../models/task.dart';
+import '../services/task_storage.dart';
 
-class ChildChallengesScreen extends StatelessWidget {
+class ChildChallengesScreen extends StatefulWidget {
   const ChildChallengesScreen({
     super.key,
     required this.child,
@@ -11,7 +13,73 @@ class ChildChallengesScreen extends StatelessWidget {
   final Child child;
 
   @override
+  State<ChildChallengesScreen> createState() =>
+      _ChildChallengesScreenState();
+}
+
+class _ChildChallengesScreenState
+    extends State<ChildChallengesScreen> {
+  List<Task> _tasks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    final tasks = await TaskStorage.getTasksForChild(
+      widget.child.accessCode,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _tasks = tasks;
+      _isLoading = false;
+    });
+  }
+
+  int get _completedDaysThisWeek {
+    final days = <String>{};
+
+    final now = DateTime.now();
+    final startOfWeek =
+        DateTime(now.year, now.month, now.day)
+            .subtract(Duration(days: now.weekday - 1));
+
+    for (final task in _tasks) {
+      final date = task.completedAt;
+
+      if (task.isCompleted &&
+          date != null &&
+          !date.isBefore(startOfWeek)) {
+        days.add('${date.year}-${date.month}-${date.day}');
+      }
+    }
+
+    return days.length.clamp(0, 5);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFFF9F0),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF7563E8),
+          ),
+        ),
+      );
+    }
+
+    final completedDays = _completedDaysThisWeek;
+    final progress = (completedDays / 5)
+        .clamp(0.0, 1.0)
+        .toDouble();
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF9F0),
       appBar: AppBar(
@@ -20,9 +88,7 @@ class ChildChallengesScreen extends StatelessWidget {
         foregroundColor: const Color(0xFF292640),
         title: const Text(
           'Challenges',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -39,7 +105,7 @@ class ChildChallengesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Keep going, ${child.name}!',
+              'Keep going, ${widget.child.name}!',
               style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
@@ -87,18 +153,19 @@ class ChildChallengesScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     LinearProgressIndicator(
-                      value: 0.8,
+                      value: progress,
                       minHeight: 12,
                       borderRadius: BorderRadius.circular(10),
                       backgroundColor: Colors.white,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(
                         Color(0xFF7563E8),
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      '4 of 5 days completed',
-                      style: TextStyle(
+                    Text(
+                      '$completedDays of 5 days completed',
+                      style: const TextStyle(
                         color: Color(0xFF7563E8),
                         fontWeight: FontWeight.bold,
                       ),
@@ -116,31 +183,36 @@ class ChildChallengesScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Padding(
-                padding: EdgeInsets.all(20),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    Text(
+                    const Text(
                       '🏆',
                       style: TextStyle(fontSize: 40),
                     ),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Reward waiting!',
-                            style: TextStyle(
+                            completedDays >= 5
+                                ? 'Challenge completed!'
+                                : 'Reward waiting!',
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF292640),
                             ),
                           ),
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           Text(
-                            'Complete one more day to unlock your weekly reward.',
-                            style: TextStyle(
+                            completedDays >= 5
+                                ? 'You unlocked the weekly reward!'
+                                : 'Complete ${5 - completedDays} more day(s) to unlock it.',
+                            style: const TextStyle(
                               color: Color(0xFF6E6240),
                             ),
                           ),
@@ -173,18 +245,20 @@ class ChildChallengesScreen extends StatelessWidget {
                   color: Color(0xFFE5DFFF),
                 ),
               ),
-              child: const ListTile(
-                leading: Text(
+              child: ListTile(
+                leading: const Text(
                   '🔥',
                   style: TextStyle(fontSize: 32),
                 ),
                 title: Text(
-                  '4 day streak',
-                  style: TextStyle(
+                  '$completedDays day streak',
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                subtitle: Text('Complete today’s tasks to keep it going!'),
+                subtitle: const Text(
+                  'Complete tasks to keep building your streak!',
+                ),
               ),
             ),
           ],

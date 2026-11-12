@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/child.dart';
+import '../models/task.dart';
+import '../services/task_storage.dart';
 
-class ChildBadgesScreen extends StatelessWidget {
+class ChildBadgesScreen extends StatefulWidget {
   const ChildBadgesScreen({
     super.key,
     required this.child,
@@ -11,43 +13,104 @@ class ChildBadgesScreen extends StatelessWidget {
   final Child child;
 
   @override
+  State<ChildBadgesScreen> createState() => _ChildBadgesScreenState();
+}
+
+class _ChildBadgesScreenState extends State<ChildBadgesScreen> {
+  List<Task> _tasks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    final tasks = await TaskStorage.getTasksForChild(
+      widget.child.accessCode,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _tasks = tasks;
+      _isLoading = false;
+    });
+  }
+
+  int get _completedTasks {
+    return _tasks.where((task) => task.isCompleted).length;
+  }
+
+  int get _earnedStars {
+    return _tasks
+        .where((task) => task.isCompleted)
+        .fold(0, (total, task) => total + task.stars);
+  }
+
+  int get _completedDays {
+    final days = <String>{};
+
+    for (final task in _tasks) {
+      if (task.isCompleted && task.completedAt != null) {
+        final date = task.completedAt!;
+        days.add('${date.year}-${date.month}-${date.day}');
+      }
+    }
+
+    return days.length;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFFF9F0),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF7563E8),
+          ),
+        ),
+      );
+    }
+
     final badges = [
       {
         'emoji': '⭐',
         'name': 'First Task',
         'description': 'Complete your first task',
-        'unlocked': true,
+        'unlocked': _completedTasks >= 1,
       },
       {
         'emoji': '🔥',
         'name': 'On Fire',
-        'description': 'Reach a 7-day streak',
-        'unlocked': true,
+        'description': 'Complete tasks on 7 days',
+        'unlocked': _completedDays >= 7,
       },
       {
         'emoji': '🏆',
         'name': 'Task Master',
         'description': 'Complete 50 tasks',
-        'unlocked': false,
+        'unlocked': _completedTasks >= 50,
       },
       {
         'emoji': '🌟',
         'name': 'Star Collector',
         'description': 'Earn 100 stars',
-        'unlocked': true,
+        'unlocked': _earnedStars >= 100,
       },
       {
         'emoji': '🚀',
         'name': 'Super Helper',
         'description': 'Complete 10 tasks',
-        'unlocked': false,
+        'unlocked': _completedTasks >= 10,
       },
       {
         'emoji': '🎯',
         'name': 'Perfect Week',
-        'description': 'Finish a weekly challenge',
-        'unlocked': false,
+        'description': 'Complete tasks on 5 days',
+        'unlocked': _completedDays >= 5,
       },
     ];
 
@@ -87,7 +150,8 @@ class ChildBadgesScreen extends StatelessWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
                         children: [
                           Text(
                             '$unlockedCount / ${badges.length} badges collected',
@@ -160,7 +224,8 @@ class ChildBadgesScreen extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment:
+                          MainAxisAlignment.center,
                       children: [
                         Opacity(
                           opacity: isUnlocked ? 1 : 0.35,
@@ -197,7 +262,8 @@ class ChildBadgesScreen extends StatelessWidget {
                             color: isUnlocked
                                 ? const Color(0xFFDDF5E8)
                                 : const Color(0xFFF3F0F0),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius:
+                                BorderRadius.circular(20),
                           ),
                           child: Text(
                             isUnlocked ? 'UNLOCKED' : 'LOCKED',
@@ -221,7 +287,7 @@ class ChildBadgesScreen extends StatelessWidget {
 
             Center(
               child: Text(
-                'Keep going, ${child.name}! Every little step counts.',
+                'Keep going, ${widget.child.name}! Every little step counts.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Color(0xFF7563E8),

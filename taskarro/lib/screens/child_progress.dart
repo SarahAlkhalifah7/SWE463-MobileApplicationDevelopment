@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/child.dart';
+import '../models/task.dart';
+import '../services/task_storage.dart';
 
-class ChildProgressScreen extends StatelessWidget {
+class ChildProgressScreen extends StatefulWidget {
   const ChildProgressScreen({
     super.key,
     required this.child,
@@ -11,7 +13,86 @@ class ChildProgressScreen extends StatelessWidget {
   final Child child;
 
   @override
+  State<ChildProgressScreen> createState() => _ChildProgressScreenState();
+}
+
+class _ChildProgressScreenState extends State<ChildProgressScreen> {
+  List<Task> _tasks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    final tasks = await TaskStorage.getTasksForChild(
+      widget.child.accessCode,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _tasks = tasks;
+      _isLoading = false;
+    });
+  }
+
+  int get _earnedStars {
+    return _tasks
+        .where((task) => task.isCompleted)
+        .fold(0, (total, task) => total + task.stars);
+  }
+
+  int get _completedTasks {
+    return _tasks.where((task) => task.isCompleted).length;
+  }
+
+  int get _completedDaysThisWeek {
+    final days = <String>{};
+
+    for (final task in _tasks) {
+      if (task.isCompleted && task.completedAt != null) {
+        final date = task.completedAt!;
+        final weekStart =
+            DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
+
+        if (!date.isBefore(
+          DateTime(
+            weekStart.year,
+            weekStart.month,
+            weekStart.day,
+          ),
+        )) {
+          days.add('${date.year}-${date.month}-${date.day}');
+        }
+      }
+    }
+
+    return days.length.clamp(0, 5);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFFF9F0),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF7563E8),
+          ),
+        ),
+      );
+    }
+
+    const requiredStars = 100;
+    final starProgress =
+        (_earnedStars / requiredStars).clamp(0.0, 1.0).toDouble();
+    final challengeProgress = (_completedDaysThisWeek / 5)
+        .clamp(0.0, 1.0)
+        .toDouble();
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF9F0),
       body: SafeArea(
@@ -19,21 +100,50 @@ class ChildProgressScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
           children: [
             Text(
-              '${child.name}’s Reward Journey',
+              '${widget.child.name}’s Reward Journey',
               style: const TextStyle(
                 fontSize: 25,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF29283A),
               ),
             ),
+
             const SizedBox(height: 18),
-            _RewardProgressCard(),
+
+            _RewardProgressCard(
+              earnedStars: _earnedStars,
+              requiredStars: requiredStars,
+              progress: starProgress,
+            ),
+
             const SizedBox(height: 18),
-            _JourneyCard(),
+
+            _JourneyCard(
+              progress: starProgress,
+            ),
+
             const SizedBox(height: 18),
-            _StreakCard(),
+
+            _StreakCard(
+              completedDays: _completedDaysThisWeek,
+            ),
+
             const SizedBox(height: 18),
-            _WeeklyChallengeCard(),
+
+            _WeeklyChallengeCard(
+              completedDays: _completedDaysThisWeek,
+              progress: challengeProgress,
+            ),
+
+            const SizedBox(height: 18),
+
+            Text(
+              'Completed tasks: $_completedTasks',
+              style: const TextStyle(
+                color: Colors.black54,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
@@ -42,10 +152,19 @@ class ChildProgressScreen extends StatelessWidget {
 }
 
 class _RewardProgressCard extends StatelessWidget {
+  const _RewardProgressCard({
+    required this.earnedStars,
+    required this.requiredStars,
+    required this.progress,
+  });
+
+  final int earnedStars;
+  final int requiredStars;
+  final double progress;
+
   @override
   Widget build(BuildContext context) {
-    const currentStars = 80;
-    const requiredStars = 100;
+    final starsLeft = requiredStars - earnedStars;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -79,22 +198,26 @@ class _RewardProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           LinearProgressIndicator(
-            value: currentStars / requiredStars,
+            value: progress,
             minHeight: 9,
             borderRadius: BorderRadius.circular(10),
             color: const Color(0xFF7563E8),
             backgroundColor: Colors.white,
           ),
           const SizedBox(height: 8),
-          const Text(
-            '80 / 100 stars',
-            style: TextStyle(
+          Text(
+            '$earnedStars / $requiredStars stars',
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Color(0xFF7563E8),
             ),
           ),
           const SizedBox(height: 4),
-          const Text('20 more stars to unlock!'),
+          Text(
+            starsLeft > 0
+                ? '$starsLeft more stars to unlock!'
+                : 'Reward unlocked!',
+          ),
         ],
       ),
     );
@@ -102,8 +225,18 @@ class _RewardProgressCard extends StatelessWidget {
 }
 
 class _JourneyCard extends StatelessWidget {
+  const _JourneyCard({
+    required this.progress,
+  });
+
+  final double progress;
+
   @override
   Widget build(BuildContext context) {
+    final started = progress > 0;
+    final reachedProgress = progress >= 0.5;
+    final rewardUnlocked = progress >= 1;
+
     return Card(
       elevation: 0,
       color: Colors.white,
@@ -137,19 +270,19 @@ class _JourneyCard extends StatelessWidget {
                   _JourneyStep(
                     icon: Icons.flag,
                     label: 'Start',
-                    completed: true,
+                    completed: started,
                   ),
-                  _JourneyLine(completed: true),
+                  _JourneyLine(completed: reachedProgress),
                   _JourneyStep(
                     icon: Icons.star,
                     label: 'Progress',
-                    completed: true,
+                    completed: reachedProgress,
                   ),
-                  _JourneyLine(completed: false),
+                  _JourneyLine(completed: rewardUnlocked),
                   _JourneyStep(
                     icon: Icons.card_giftcard,
                     label: 'Reward',
-                    completed: false,
+                    completed: rewardUnlocked,
                   ),
                 ],
               ),
@@ -222,6 +355,12 @@ class _JourneyLine extends StatelessWidget {
 }
 
 class _StreakCard extends StatelessWidget {
+  const _StreakCard({
+    required this.completedDays,
+  });
+
+  final int completedDays;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -230,32 +369,32 @@ class _StreakCard extends StatelessWidget {
         color: const Color(0xFFFFF0B9),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Text(
+          const Text(
             '🔥',
             style: TextStyle(fontSize: 38),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Current Streak',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                '4 days',
-                style: TextStyle(
+                '$completedDays days',
+                style: const TextStyle(
                   fontSize: 25,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFFE09D00),
                 ),
               ),
-              Text('Keep going!'),
+              const Text('Keep going!'),
             ],
           ),
         ],
@@ -265,6 +404,14 @@ class _StreakCard extends StatelessWidget {
 }
 
 class _WeeklyChallengeCard extends StatelessWidget {
+  const _WeeklyChallengeCard({
+    required this.completedDays,
+    required this.progress,
+  });
+
+  final int completedDays;
+  final double progress;
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -302,16 +449,16 @@ class _WeeklyChallengeCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             LinearProgressIndicator(
-              value: 4 / 5,
+              value: progress,
               minHeight: 9,
               borderRadius: BorderRadius.circular(10),
               color: const Color(0xFF7563E8),
               backgroundColor: const Color(0xFFEAE7F8),
             ),
             const SizedBox(height: 8),
-            const Text(
-              '4 of 5 days completed',
-              style: TextStyle(
+            Text(
+              '$completedDays of 5 days completed',
+              style: const TextStyle(
                 color: Color(0xFF7563E8),
                 fontWeight: FontWeight.bold,
               ),

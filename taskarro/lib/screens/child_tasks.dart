@@ -1,40 +1,53 @@
 import 'package:flutter/material.dart';
+
 import '../models/child.dart';
 import '../models/task.dart';
+import '../services/task_storage.dart';
 
 class ChildTasksScreen extends StatefulWidget {
   const ChildTasksScreen({
-  super.key,
-  required this.child,
-});
+    super.key,
+    required this.child,
+  });
 
-final Child child;
+  final Child child;
 
   @override
   State<ChildTasksScreen> createState() => _ChildTasksScreenState();
 }
 
 class _ChildTasksScreenState extends State<ChildTasksScreen> {
-  final List<Task> _tasks = [
-    Task(
-      id: '1',
-      childId: 'demo-child',
-      title: 'Finish homework',
-      stars: 10,
-    ),
-    Task(
-      id: '2',
-      childId: 'demo-child',
-      title: 'Clean your room',
-      stars: 5,
-    ),
-    Task(
-      id: '3',
-      childId: 'demo-child',
-      title: 'Pack school bag',
-      stars: 5,
-    ),
-  ];
+  List<Task> _tasks = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    try {
+      final tasks = await TaskStorage.getTasksForChild(
+        widget.child.accessCode,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _tasks = tasks;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Unable to load tasks.';
+      });
+    }
+  }
 
   int get _earnedStars {
     return _tasks
@@ -42,12 +55,17 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
         .fold(0, (total, task) => total + task.stars);
   }
 
-  void _completeTask(Task task) {
+  Future<void> _completeTask(Task task) async {
     if (task.isCompleted) return;
 
     setState(() {
       task.isCompleted = true;
+      task.completedAt = DateTime.now();
     });
+
+    await TaskStorage.updateTask(task);
+
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -61,27 +79,50 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
     final completedTasks =
         _tasks.where((task) => task.isCompleted).length;
 
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFFF9F0),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF7563E8),
+          ),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFFFF9F0),
+        body: Center(
+          child: Text(_errorMessage!),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF9F0),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
           children: [
-             Text(
+            Text(
               'Hey, ${widget.child.name}! 👋',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF29283A),
               ),
             ),
             const SizedBox(height: 16),
+
             _ProgressCard(
               stars: _earnedStars,
               completed: completedTasks,
               total: _tasks.length,
             ),
+
             const SizedBox(height: 26),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -100,14 +141,55 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
                 ),
               ],
             ),
+
             const SizedBox(height: 12),
-            ..._tasks.map(
-              (task) => _TaskCard(
-                task: task,
-                onComplete: () => _completeTask(task),
+
+            if (_tasks.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: const Color(0xFFE8E3F5),
+                  ),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(
+                      Icons.assignment_outlined,
+                      size: 60,
+                      color: Color(0xFF7563E8),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'No tasks yet',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Your parent will add tasks for you soon!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ..._tasks.map(
+                (task) => _TaskCard(
+                  task: task,
+                  onComplete: () => _completeTask(task),
+                ),
               ),
-            ),
+
             const SizedBox(height: 12),
+
             _RewardCard(
               earnedStars: _earnedStars,
             ),
@@ -147,13 +229,16 @@ class _ProgressCard extends StatelessWidget {
             size: 42,
           ),
           const SizedBox(width: 10),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'My Stars',
-                  style: TextStyle(color: Colors.black54),
+                  style: TextStyle(
+                    color: Colors.black54,
+                  ),
                 ),
                 Text(
                   '$stars',
@@ -174,9 +259,11 @@ class _ProgressCard extends StatelessWidget {
               ],
             ),
           ),
+
           const SizedBox(width: 12),
+
           const Text(
-            '🔥 4 day\nstreak',
+            '🔥 0 day\nstreak',
             textAlign: TextAlign.center,
           ),
         ],
@@ -255,6 +342,7 @@ class _RewardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const requiredStars = 100;
+
     final progress =
         (earnedStars / requiredStars).clamp(0.0, 1.0).toDouble();
 
