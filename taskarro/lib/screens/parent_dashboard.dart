@@ -8,6 +8,13 @@ import 'add_child.dart';
 
 import 'package:flutter/services.dart';
 
+import 'parent_child_progress.dart';
+import '../models/reward.dart';
+import '../services/reward_storage.dart';
+import '../services/star_service.dart';
+import '../models/task.dart';
+import '../services/task_storage.dart';
+
 class ParentDashboard extends StatelessWidget {
   const ParentDashboard({
     super.key,
@@ -199,14 +206,23 @@ class ParentDashboard extends StatelessWidget {
 
                         const SizedBox(height: 20),
 
-                        // Temporary progress
+                        // Stars and streak
                         Row(
                           children: [
                             Expanded(
-                              child: _buildStat(
-                                icon: '⭐',
-                                value: '0',
-                                label: 'Stars',
+                              child: FutureBuilder<int>(
+                                future: StarService.getAvailableStars(
+                                  child.accessCode,
+                                ),
+                                builder: (context, snapshot) {
+                                  final stars = snapshot.data ?? 0;
+
+                                  return _buildStat(
+                                    icon: '⭐',
+                                    value: '$stars',
+                                    label: 'Stars',
+                                  );
+                                },
                               ),
                             ),
 
@@ -225,71 +241,206 @@ class ParentDashboard extends StatelessWidget {
                         const SizedBox(height: 20),
 
                         // Today's Missions
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "Today's Missions",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            Text('0 / 0', style: TextStyle(color: Colors.grey)),
-                          ],
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: const LinearProgressIndicator(
-                            value: 0,
-                            minHeight: 8,
-                            backgroundColor: Color(0xFFEDEAF5),
+                        // Today's Missions
+                        FutureBuilder<List<Task>>(
+                          future: TaskStorage.getTasksForChild(
+                            child.accessCode,
                           ),
+                          builder: (context, snapshot) {
+                            final tasks = snapshot.data ?? [];
+
+                            final completedTasks = tasks
+                                .where((task) => task.isCompleted)
+                                .length;
+
+                            final totalTasks = tasks.length;
+
+                            final progress = totalTasks == 0
+                                ? 0.0
+                                : completedTasks / totalTasks;
+
+                            return Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      "Today's Missions",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      '$completedTasks / $totalTasks',
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 10),
+
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: LinearProgressIndicator(
+                                    value: progress,
+                                    minHeight: 8,
+                                    backgroundColor: const Color(0xFFEDEAF5),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 18),
 
                         // Reward
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF8E6),
-                            borderRadius: BorderRadius.circular(14),
+                        FutureBuilder<List<Reward>>(
+                          future: RewardStorage.getRewardsForChild(
+                            child.accessCode,
                           ),
-                          child: const Row(
-                            children: [
-                              Text('🎁', style: TextStyle(fontSize: 25)),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+
+                            final rewards = snapshot.data ?? [];
+
+                            // Get rewards that have not been given yet
+                            final activeRewards = rewards
+                                .where((reward) => !reward.isRedeemed)
+                                .toList();
+
+                            // No rewards yet
+                            if (activeRewards.isEmpty) {
+                              return Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF8E6),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Row(
                                   children: [
-                                    Text(
-                                      'Next Reward',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                    Text(
-                                      'No reward set yet',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
+                                    Text('🎁', style: TextStyle(fontSize: 25)),
+
+                                    SizedBox(width: 10),
+
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Next Reward',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+
+                                          Text(
+                                            'No reward set yet',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
+                              );
+                            }
+
+                            // Cheapest active reward = next reward
+                            activeRewards.sort(
+                              (a, b) =>
+                                  a.requiredStars.compareTo(b.requiredStars),
+                            );
+
+                            final nextReward = activeRewards.first;
+
+                            return FutureBuilder<int>(
+                              future: StarService.getAvailableStars(
+                                child.accessCode,
                               ),
-                            ],
-                          ),
+                              builder: (context, starSnapshot) {
+                                final stars = starSnapshot.data ?? 0;
+
+                                return Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF8E6),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        nextReward.icon,
+                                        style: const TextStyle(fontSize: 25),
+                                      ),
+
+                                      const SizedBox(width: 10),
+
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Next Reward',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+
+                                            Text(
+                                              nextReward.title,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 3),
+
+                                            Text(
+                                              '$stars / ${nextReward.requiredStars} stars',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 10),
 
                         TextButton(
                           onPressed: () {
-                            // Child progress screen later
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ParentChildProgressScreen(child: child),
+                              ),
+                            );
                           },
                           child: const Text('View Progress →'),
                         ),
