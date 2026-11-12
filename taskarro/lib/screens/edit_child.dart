@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/child.dart';
+
+import 'package:flutter/services.dart';
 
 class EditChildScreen extends StatefulWidget {
   const EditChildScreen({super.key, required this.child});
@@ -14,7 +18,11 @@ class EditChildScreen extends StatefulWidget {
 
 class _EditChildScreenState extends State<EditChildScreen> {
   late TextEditingController _nameController;
+
+  final ImagePicker _imagePicker = ImagePicker();
+
   late String selectedAvatar;
+  XFile? selectedPhoto;
 
   final List<String> avatars = ['🐰', '🐼', '🦊', '🐱', '🐻'];
 
@@ -33,6 +41,62 @@ class _EditChildScreenState extends State<EditChildScreen> {
     super.dispose();
   }
 
+  // Camera / Library menu
+  void _showPhotoOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+
+                  _pickPhoto(ImageSource.camera);
+                },
+              ),
+
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from Library'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+
+                  _pickPhoto(ImageSource.gallery);
+                },
+              ),
+
+              ListTile(
+                leading: const Icon(Icons.close),
+                title: const Text('Cancel'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Pick image
+  Future<void> _pickPhoto(ImageSource source) async {
+    final XFile? photo = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 80,
+    );
+
+    if (photo != null && mounted) {
+      setState(() {
+        selectedPhoto = photo;
+      });
+    }
+  }
+
   void _saveChanges() {
     final name = _nameController.text.trim();
 
@@ -48,11 +112,12 @@ class _EditChildScreenState extends State<EditChildScreen> {
       name: name,
       avatar: selectedAvatar,
 
-      // Keep the same generated code
+      // Keep same child code
       accessCode: widget.child.accessCode,
 
-      // Keep existing photo if there is one
-      photoPath: widget.child.photoPath,
+      // New photo if selected,
+      // otherwise keep old photo
+      photoPath: selectedPhoto?.path ?? widget.child.photoPath,
     );
 
     Navigator.pop(context, updatedChild);
@@ -98,7 +163,7 @@ class _EditChildScreenState extends State<EditChildScreen> {
 
                   const Center(
                     child: Text(
-                      'Update the child name or profile icon.',
+                      'Update the child name or profile.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey),
                     ),
@@ -106,7 +171,7 @@ class _EditChildScreenState extends State<EditChildScreen> {
 
                   const SizedBox(height: 30),
 
-                  // Name
+                  // Child name
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(
@@ -119,50 +184,102 @@ class _EditChildScreenState extends State<EditChildScreen> {
                   const SizedBox(height: 25),
 
                   const Text(
-                    'Choose Profile Icon',
+                    'Choose Profile',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  const Text(
+                    'Choose an icon or add a photo',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
 
                   const SizedBox(height: 14),
 
-                  // Avatars
+                  // Avatars + Camera
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
-                    children: avatars.map((avatar) {
-                      final isSelected = selectedAvatar == avatar;
+                    children: [
+                      ...avatars.map((avatar) {
+                        final isSelected =
+                            selectedPhoto == null && selectedAvatar == avatar;
 
-                      return InkWell(
-                        borderRadius: BorderRadius.circular(50),
-                        onTap: () {
-                          setState(() {
-                            selectedAvatar = avatar;
-                          });
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          width: 58,
-                          height: 58,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected
-                                ? Theme.of(context).colorScheme.primaryContainer
-                                : const Color(0xFFF5F2FF),
-                            border: Border.all(
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(50),
+                          onTap: () {
+                            setState(() {
+                              selectedAvatar = avatar;
+
+                              // Choosing icon
+                              // removes new photo
+                              selectedPhoto = null;
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: 58,
+                            height: 58,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+
                               color: isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : const Color(0xFFE2DDF5),
-                              width: isSelected ? 3 : 1,
+                                  ? Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer
+                                  : const Color(0xFFF5F2FF),
+
+                              border: Border.all(
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : const Color(0xFFE2DDF5),
+                                width: isSelected ? 3 : 1,
+                              ),
+                            ),
+                            child: Text(
+                              avatar,
+                              style: const TextStyle(fontSize: 30),
                             ),
                           ),
-                          child: Text(
-                            avatar,
-                            style: const TextStyle(fontSize: 30),
+                        );
+                      }),
+
+                      // Camera
+                      InkWell(
+                        borderRadius: BorderRadius.circular(50),
+                        onTap: _showPhotoOptions,
+                        child: Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFF5F2FF),
+                            border: Border.all(
+                              color: selectedPhoto != null
+                                  ? Theme.of(context).colorScheme.primary
+                                  : const Color(0xFFE2DDF5),
+                              width: selectedPhoto != null ? 3 : 1,
+                            ),
                           ),
+
+                          child: selectedPhoto != null
+                              ? ClipOval(
+                                  child: Image.file(
+                                    File(selectedPhoto!.path),
+                                    width: 58,
+                                    height: 58,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.camera_alt_outlined,
+                                  color: Color(0xFF7563E8),
+                                ),
                         ),
-                      );
-                    }).toList(),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 30),
@@ -204,12 +321,15 @@ class _EditChildScreenState extends State<EditChildScreen> {
 
                         IconButton(
                           tooltip: 'Copy child code',
+                          icon: const Icon(Icons.copy_rounded),
                           onPressed: () async {
                             await Clipboard.setData(
                               ClipboardData(text: widget.child.accessCode),
                             );
 
-                            if (!context.mounted) return;
+                            if (!context.mounted) {
+                              return;
+                            }
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -218,7 +338,6 @@ class _EditChildScreenState extends State<EditChildScreen> {
                               ),
                             );
                           },
-                          icon: const Icon(Icons.copy_rounded),
                         ),
                       ],
                     ),
