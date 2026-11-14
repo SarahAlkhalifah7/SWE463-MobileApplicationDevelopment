@@ -14,6 +14,7 @@ import '../services/reward_storage.dart';
 import '../services/star_service.dart';
 import '../models/task.dart';
 import '../services/task_storage.dart';
+import '../services/streak_service.dart';
 
 class ParentDashboard extends StatelessWidget {
   const ParentDashboard({
@@ -229,10 +230,19 @@ class ParentDashboard extends StatelessWidget {
                             const SizedBox(width: 12),
 
                             Expanded(
-                              child: _buildStat(
-                                icon: '🔥',
-                                value: '0',
-                                label: 'Day Streak',
+                              child: FutureBuilder<int>(
+                                future: StreakService.getCurrentStreak(
+                                  child.accessCode,
+                                ),
+                                builder: (context, snapshot) {
+                                  final streak = snapshot.data ?? 0;
+
+                                  return _buildStat(
+                                    icon: '🔥',
+                                    value: '$streak',
+                                    label: 'Day Streak',
+                                  );
+                                },
                               ),
                             ),
                           ],

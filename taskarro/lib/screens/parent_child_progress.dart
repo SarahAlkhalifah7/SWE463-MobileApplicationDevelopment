@@ -8,6 +8,7 @@ import '../models/task.dart';
 import '../services/reward_storage.dart';
 import '../services/star_service.dart';
 import '../services/task_storage.dart';
+import '../services/streak_service.dart';
 
 class ParentChildProgressScreen extends StatefulWidget {
   const ParentChildProgressScreen({super.key, required this.child});
@@ -27,7 +28,7 @@ class _ParentChildProgressScreenState extends State<ParentChildProgressScreen> {
 
   int _earnedStars = 0;
   int _availableStars = 0;
-
+  int _streak = 0;
   @override
   void initState() {
     super.initState();
@@ -44,7 +45,7 @@ class _ParentChildProgressScreenState extends State<ParentChildProgressScreen> {
     final earnedStars = await StarService.getEarnedStars(childId);
 
     final availableStars = await StarService.getAvailableStars(childId);
-
+    final streak = await StreakService.getCurrentStreak(childId);
     if (!mounted) return;
 
     setState(() {
@@ -52,6 +53,7 @@ class _ParentChildProgressScreenState extends State<ParentChildProgressScreen> {
       _rewards = rewards;
       _earnedStars = earnedStars;
       _availableStars = availableStars;
+      _streak = streak;
       _isLoading = false;
     });
   }
@@ -129,7 +131,7 @@ class _ParentChildProgressScreenState extends State<ParentChildProgressScreen> {
                 Expanded(
                   child: _buildStatCard(
                     icon: '🔥',
-                    value: '-',
+                    value: '$_streak',
                     label: 'Day Streak',
                   ),
                 ),

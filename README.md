@@ -247,7 +247,7 @@ The Flutter implementation builds on the prototype while adding functional navig
 
 ## Team Contributions
 
-### Member 1 – Parent Accounts and Parent Experience
+### Batool Alawami – Parent Accounts and Parent Experience
 
 - Parent sign up and login
 - Account validation and local persistence
@@ -259,7 +259,7 @@ The Flutter implementation builds on the prototype while adding functional navig
 - Parent child-progress view
 - Integration of real task, star, and reward data into the parent experience
 
-### Member 2 – Task and Reward Management
+### Olla – Task and Reward Management
 
 - Task management
 - Add and edit tasks
@@ -269,7 +269,7 @@ The Flutter implementation builds on the prototype while adding functional navig
 - Add, edit, and delete rewards
 - Reward persistence and redemption
 
-### Member 3 – Child Experience and Progress
+### Sara – Child Experience and Progress
 
 - Child access-code login
 - Child task experience
