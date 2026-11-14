@@ -42,24 +42,17 @@ class _ChildChallengesScreenState
   }
 
   int get _completedDaysThisWeek {
-    final days = <String>{};
-
     final now = DateTime.now();
     final startOfWeek =
         DateTime(now.year, now.month, now.day)
             .subtract(Duration(days: now.weekday - 1));
 
-    for (final task in _tasks) {
-      final date = task.completedAt;
+    // Days this week with at least one completed task (from task history)
+    final days = _tasks.completionDays
+        .where((day) => !day.isBefore(startOfWeek))
+        .length;
 
-      if (task.isCompleted &&
-          date != null &&
-          !date.isBefore(startOfWeek)) {
-        days.add('${date.year}-${date.month}-${date.day}');
-      }
-    }
-
-    return days.length.clamp(0, 5);
+    return days.clamp(0, 5);
   }
 
   @override

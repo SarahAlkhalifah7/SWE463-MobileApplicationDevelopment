@@ -251,9 +251,8 @@ class ParentDashboard extends StatelessWidget {
                         const SizedBox(height: 20),
 
                         // Today's Missions
-                        // Today's Missions
                         FutureBuilder<List<Task>>(
-                          future: TaskStorage.getTasksForChild(
+                          future: TaskStorage.getTodayTasksForChild(
                             child.accessCode,
                           ),
                           builder: (context, snapshot) {

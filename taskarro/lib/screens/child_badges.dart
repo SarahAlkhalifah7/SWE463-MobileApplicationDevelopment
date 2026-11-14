@@ -39,28 +39,13 @@ class _ChildBadgesScreenState extends State<ChildBadgesScreen> {
     });
   }
 
-  int get _completedTasks {
-    return _tasks.where((task) => task.isCompleted).length;
-  }
+  // These use each task's completion history, so repeating
+  // tasks count every time they were completed.
+  int get _completedTasks => _tasks.totalCompletions;
 
-  int get _earnedStars {
-    return _tasks
-        .where((task) => task.isCompleted)
-        .fold(0, (total, task) => total + task.stars);
-  }
+  int get _earnedStars => _tasks.totalEarnedStars;
 
-  int get _completedDays {
-    final days = <String>{};
-
-    for (final task in _tasks) {
-      if (task.isCompleted && task.completedAt != null) {
-        final date = task.completedAt!;
-        days.add('${date.year}-${date.month}-${date.day}');
-      }
-    }
-
-    return days.length;
-  }
+  int get _completedDays => _tasks.completionDays.length;
 
   @override
   Widget build(BuildContext context) {
