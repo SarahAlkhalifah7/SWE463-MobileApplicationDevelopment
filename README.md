@@ -30,9 +30,13 @@ Taskarro provides two main experiences:
 - Create, edit, delete, and prioritize tasks
 - Assign tasks to specific children
 - Assign stars to tasks
+- Schedule tasks with an optional due date and time
+- Repeat tasks daily, weekly, or on custom weekdays
+- Filter tasks by all, pending, and completed
 - Track completed and pending tasks
 - Create, edit, and delete rewards
 - Set the number of stars required for each reward
+- Give (redeem) a reward once the child has enough stars
 - View available stars and reward progress
 - View each child's task progress
 - View earned stars and progress summaries
@@ -43,7 +47,7 @@ Taskarro provides two main experiences:
 
 - Login using a unique 4-digit child access code
 - Personalized child experience
-- View assigned daily missions
+- View today's missions (repeating tasks appear on their scheduled days)
 - Complete assigned tasks
 - Earn stars from completed tasks
 - View available stars
@@ -117,6 +121,8 @@ The application currently stores information including:
 
 Stars are calculated from completed tasks and redeemed rewards rather than being stored separately, helping keep star totals consistent with task and reward data.
 
+Each task keeps a completion history. Repeating tasks become pending again when their next scheduled day arrives, while the history keeps the stars already earned. Streaks, weekly challenges, and badges are calculated from this history.
+
 ## Technologies Used
 
 - **Flutter**
@@ -156,7 +162,6 @@ taskarro/
 │   │   ├── parent_mode.dart
 │   │   ├── parent_profile.dart
 │   │   ├── parent_signup.dart
-│   │   ├── placeholder.dart
 │   │   ├── reward_form_dialog.dart
 │   │   ├── rewards_management.dart
 │   │   ├── task_management.dart
@@ -166,11 +171,14 @@ taskarro/
 │   │   ├── account_storage.dart
 │   │   ├── reward_storage.dart
 │   │   ├── star_service.dart
+│   │   ├── streak_service.dart
 │   │   └── task_storage.dart
 │   │
 │   └── main.dart
 │
 ├── test/
+│   ├── storage_services_test.dart
+│   ├── task_reward_models_test.dart
 │   └── widget_test.dart
 │
 ├── android/
@@ -190,8 +198,7 @@ Taskarro follows a simple separation of responsibilities:
 - **Models** define the application's core data objects, including parents, children, tasks, and rewards.
 - **Screens** contain the Parent and Child user interfaces and navigation flows.
 - **Services** manage local persistence and shared application logic for accounts, tasks, rewards, and stars.
-- **Tests** contain automated Flutter widget tests for important application flows.
-```
+- **Tests** contain automated widget tests for important application flows and unit tests for the task and reward models, storage, and star calculations.
 
 ## Running the Application
 
@@ -247,7 +254,7 @@ The Flutter implementation builds on the prototype while adding functional navig
 
 ## Team Contributions
 
-### Batool Alawami – Parent Accounts and Parent Experience
+### Batool Alawami (202160170) – Parent Accounts and Parent Experience
 
 - Parent sign up and login
 - Account validation and local persistence
@@ -259,17 +266,21 @@ The Flutter implementation builds on the prototype while adding functional navig
 - Parent child-progress view
 - Integration of real task, star, and reward data into the parent experience
 
-### Olla – Task and Reward Management
+### Ola Alhodar (202283060) – Task and Reward Management
 
-- Task management
-- Add and edit tasks
-- Task priority and star assignment
-- Task persistence
-- Reward management
-- Add, edit, and delete rewards
-- Reward persistence and redemption
+- Task and Reward data models with JSON support
+- Task and reward local persistence (TaskStorage, RewardStorage)
+- Star calculation service (StarService)
+- Task Management screen with child selector, filters, and empty states
+- Reusable Add / Edit Task form with validation
+- Task priority, due date and time, and recurrence (daily, weekly, custom days)
+- Edit, delete with confirmation, and quick priority change for tasks
+- Rewards Management screen with star balance and reward progress
+- Add, edit, delete, and give rewards
+- Repeating-task completion history and daily reset
+- Unit tests for models, storage, and star calculations
 
-### Sara – Child Experience and Progress
+### Sarah Alkhalifa (202276880) – Child Experience and Progress
 
 - Child access-code login
 - Child task experience
@@ -285,3 +296,15 @@ The core Parent and Child flows are implemented and integrated with locally stor
 Task, star, and reward information is shared between the Parent and Child experiences so that progress can be reflected across the application.
 
 Further development may include additional progress logic, expanded achievements, improved persistent profile-photo handling, and additional automated tests.
+
+## AI Use Disclosure
+
+The team designed Taskarro, created the Figma prototype, and planned the features, screens, and data model. The Flutter concepts covered in the course lectures (widgets and layouts, forms and validation, navigation, `setState`, and local storage with SharedPreferences) were applied by the team throughout the project.
+
+Generative AI (Claude) was used as a coding assistant to:
+
+- help write and connect code across the parent and child screens, models, and services
+- implement more complex logic, such as recurring task scheduling and reset, completion history, and star, streak, and reward calculations
+- debug errors, write unit tests, and explain code and Flutter concepts
+
+All AI-assisted code was reviewed, run, and tested by the team on the Android emulator, and the team can explain how every part of the application works.
