@@ -128,9 +128,9 @@ class _ParentChildProgressScreenState extends State<ParentChildProgressScreen> {
 
                 Expanded(
                   child: _buildStatCard(
-                    icon: '🌟',
-                    value: '$_availableStars',
-                    label: 'Available Stars',
+                    icon: '🔥',
+                    value: '-',
+                    label: 'Day Streak',
                   ),
                 ),
               ],
