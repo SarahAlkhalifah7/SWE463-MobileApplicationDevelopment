@@ -5,6 +5,7 @@ import '../models/reward.dart';
 import '../models/task.dart';
 import '../services/reward_storage.dart';
 import '../services/star_service.dart';
+import '../services/streak_service.dart';
 import '../services/task_storage.dart';
 
 class ChildTasksScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class ChildTasksScreen extends StatefulWidget {
 class _ChildTasksScreenState extends State<ChildTasksScreen> {
   List<Task> _tasks = [];
   int _availableStars = 0;
+  int _streak = 0;
   Reward? _nextReward;
   bool _isLoading = true;
   String? _errorMessage;
@@ -40,12 +42,14 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
       final tasks = await TaskStorage.getTodayTasksForChild(childId);
       final stars = await StarService.getAvailableStars(childId);
       final nextReward = await RewardStorage.getNextReward(childId);
+      final streak = await StreakService.getCurrentStreak(childId);
 
       if (!mounted) return;
 
       setState(() {
         _tasks = tasks;
         _availableStars = stars;
+        _streak = streak;
         _nextReward = nextReward;
         _isLoading = false;
       });
@@ -70,7 +74,14 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
 
     await TaskStorage.updateTask(task);
 
+    // Completing a task can start or extend the streak
+    final streak = await StreakService.getCurrentStreak(
+      widget.child.accessCode,
+    );
+
     if (!mounted) return;
+
+    setState(() => _streak = streak);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -124,6 +135,7 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
               stars: _availableStars,
               completed: completedTasks,
               total: _tasks.length,
+              streak: _streak,
             ),
 
             const SizedBox(height: 26),
@@ -211,9 +223,11 @@ class _ProgressCard extends StatelessWidget {
     required this.stars,
     required this.completed,
     required this.total,
+    required this.streak,
   });
 
   final int stars;
+  final int streak;
   final int completed;
   final int total;
 
@@ -268,8 +282,9 @@ class _ProgressCard extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-          const Text(
-            '🔥 0 day\nstreak',
+          // Real streak from StreakService (same value the parent sees)
+          Text(
+            '🔥 $streak day\nstreak',
             textAlign: TextAlign.center,
           ),
         ],
