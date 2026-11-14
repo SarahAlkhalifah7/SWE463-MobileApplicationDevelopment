@@ -356,7 +356,7 @@ class _RewardCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '🍦 Next reward: Ice Cream',
+            '🎁 Next reward',
             style: TextStyle(
               fontWeight: FontWeight.bold,
             ),

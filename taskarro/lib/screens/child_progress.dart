@@ -178,12 +178,12 @@ class _RewardProgressCard extends StatelessWidget {
           const Row(
             children: [
               Text(
-                '🍦',
+                '🎁',
                 style: TextStyle(fontSize: 30),
               ),
               SizedBox(width: 10),
               Text(
-                'Ice Cream Trip',
+                'Your Next Reward',
                 style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
