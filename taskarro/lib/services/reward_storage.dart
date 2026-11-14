@@ -32,6 +32,17 @@ class RewardStorage {
     return rewards.where((reward) => reward.childId == childId).toList();
   }
 
+  // The reward the child is working towards:
+  // the cheapest reward that has not been given yet (null if none)
+  static Future<Reward?> getNextReward(String childId) async {
+    final rewards = await getRewardsForChild(childId);
+
+    final activeRewards = rewards.where((reward) => !reward.isRedeemed).toList()
+      ..sort((a, b) => a.requiredStars.compareTo(b.requiredStars));
+
+    return activeRewards.isEmpty ? null : activeRewards.first;
+  }
+
   // Save all rewards
   static Future<void> _saveRewards(List<Reward> rewards) async {
     final prefs = await SharedPreferences.getInstance();
@@ -56,9 +67,7 @@ class RewardStorage {
   static Future<void> updateReward(Reward updatedReward) async {
     final rewards = await getRewards();
 
-    final index = rewards.indexWhere(
-      (reward) => reward.id == updatedReward.id,
-    );
+    final index = rewards.indexWhere((reward) => reward.id == updatedReward.id);
 
     if (index != -1) {
       rewards[index] = updatedReward;

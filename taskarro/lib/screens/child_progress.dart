@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/child.dart';
+import '../models/reward.dart';
 import '../models/task.dart';
+import '../services/reward_storage.dart';
+import '../services/star_service.dart';
 import '../services/task_storage.dart';
 
 class ChildProgressScreen extends StatefulWidget {
@@ -18,6 +21,8 @@ class ChildProgressScreen extends StatefulWidget {
 
 class _ChildProgressScreenState extends State<ChildProgressScreen> {
   List<Task> _tasks = [];
+  int _availableStars = 0;
+  Reward? _nextReward;
   bool _isLoading = true;
 
   @override
@@ -27,50 +32,35 @@ class _ChildProgressScreenState extends State<ChildProgressScreen> {
   }
 
   Future<void> _loadProgress() async {
-    final tasks = await TaskStorage.getTasksForChild(
-      widget.child.accessCode,
-    );
+    final childId = widget.child.accessCode;
+    final tasks = await TaskStorage.getTasksForChild(childId);
+    final stars = await StarService.getAvailableStars(childId);
+    final nextReward = await RewardStorage.getNextReward(childId);
 
     if (!mounted) return;
 
     setState(() {
       _tasks = tasks;
+      _availableStars = stars;
+      _nextReward = nextReward;
       _isLoading = false;
     });
   }
 
-  int get _earnedStars {
-    return _tasks
-        .where((task) => task.isCompleted)
-        .fold(0, (total, task) => total + task.stars);
-  }
-
-  int get _completedTasks {
-    return _tasks.where((task) => task.isCompleted).length;
-  }
+  // Counts every completion, so a daily task done 3 days counts 3
+  int get _completedTasks => _tasks.totalCompletions;
 
   int get _completedDaysThisWeek {
-    final days = <String>{};
+    final now = DateTime.now();
+    final weekStart = Task.dateOnly(
+      now.subtract(Duration(days: now.weekday - 1)),
+    );
 
-    for (final task in _tasks) {
-      if (task.isCompleted && task.completedAt != null) {
-        final date = task.completedAt!;
-        final weekStart =
-            DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
+    final days = _tasks.completionDays
+        .where((day) => !day.isBefore(weekStart))
+        .length;
 
-        if (!date.isBefore(
-          DateTime(
-            weekStart.year,
-            weekStart.month,
-            weekStart.day,
-          ),
-        )) {
-          days.add('${date.year}-${date.month}-${date.day}');
-        }
-      }
-    }
-
-    return days.length.clamp(0, 5);
+    return days.clamp(0, 5);
   }
 
   @override
@@ -86,9 +76,8 @@ class _ChildProgressScreenState extends State<ChildProgressScreen> {
       );
     }
 
-    const requiredStars = 100;
-    final starProgress =
-        (_earnedStars / requiredStars).clamp(0.0, 1.0).toDouble();
+    // Progress towards the next reward the parent created
+    final starProgress = _nextReward?.progress(_availableStars) ?? 0.0;
     final challengeProgress = (_completedDaysThisWeek / 5)
         .clamp(0.0, 1.0)
         .toDouble();
@@ -111,8 +100,8 @@ class _ChildProgressScreenState extends State<ChildProgressScreen> {
             const SizedBox(height: 18),
 
             _RewardProgressCard(
-              earnedStars: _earnedStars,
-              requiredStars: requiredStars,
+              stars: _availableStars,
+              reward: _nextReward,
               progress: starProgress,
             ),
 
@@ -153,18 +142,19 @@ class _ChildProgressScreenState extends State<ChildProgressScreen> {
 
 class _RewardProgressCard extends StatelessWidget {
   const _RewardProgressCard({
-    required this.earnedStars,
-    required this.requiredStars,
+    required this.stars,
+    required this.reward,
     required this.progress,
   });
 
-  final int earnedStars;
-  final int requiredStars;
+  final int stars;
+  final Reward? reward;
   final double progress;
 
   @override
   Widget build(BuildContext context) {
-    final starsLeft = requiredStars - earnedStars;
+    final reward = this.reward;
+    final starsLeft = reward?.starsNeeded(stars) ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -175,26 +165,30 @@ class _RewardProgressCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Text(
-                '🎁',
-                style: TextStyle(fontSize: 30),
+                reward?.icon ?? '🎁',
+                style: const TextStyle(fontSize: 30),
               ),
-              SizedBox(width: 10),
-              Text(
-                'Your Next Reward',
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  reward?.title ?? 'No reward yet',
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Your next reward',
-            style: TextStyle(color: Colors.black54),
+          Text(
+            reward == null
+                ? 'Ask your parent to add a reward!'
+                : 'Your next reward',
+            style: const TextStyle(color: Colors.black54),
           ),
           const SizedBox(height: 14),
           LinearProgressIndicator(
@@ -206,18 +200,23 @@ class _RewardProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '$earnedStars / $requiredStars stars',
+            reward == null
+                ? '$stars stars'
+                : '${stars.clamp(0, reward.requiredStars)} / '
+                    '${reward.requiredStars} stars',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Color(0xFF7563E8),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            starsLeft > 0
-                ? '$starsLeft more stars to unlock!'
-                : 'Reward unlocked!',
-          ),
+          if (reward != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              starsLeft > 0
+                  ? '$starsLeft more stars to unlock!'
+                  : 'Reward unlocked!',
+            ),
+          ],
         ],
       ),
     );

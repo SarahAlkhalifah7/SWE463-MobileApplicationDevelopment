@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/child.dart';
+import '../models/reward.dart';
 import '../models/task.dart';
+import '../services/reward_storage.dart';
+import '../services/star_service.dart';
 import '../services/task_storage.dart';
 
 class ChildTasksScreen extends StatefulWidget {
@@ -18,6 +21,8 @@ class ChildTasksScreen extends StatefulWidget {
 
 class _ChildTasksScreenState extends State<ChildTasksScreen> {
   List<Task> _tasks = [];
+  int _availableStars = 0;
+  Reward? _nextReward;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -29,14 +34,19 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
 
   Future<void> _loadTasks() async {
     try {
-      final tasks = await TaskStorage.getTasksForChild(
-        widget.child.accessCode,
-      );
+      final childId = widget.child.accessCode;
+
+      // Only today's missions (repeating tasks show on their days)
+      final tasks = await TaskStorage.getTodayTasksForChild(childId);
+      final stars = await StarService.getAvailableStars(childId);
+      final nextReward = await RewardStorage.getNextReward(childId);
 
       if (!mounted) return;
 
       setState(() {
         _tasks = tasks;
+        _availableStars = stars;
+        _nextReward = nextReward;
         _isLoading = false;
       });
     } catch (error) {
@@ -49,18 +59,13 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
     }
   }
 
-  int get _earnedStars {
-    return _tasks
-        .where((task) => task.isCompleted)
-        .fold(0, (total, task) => total + task.stars);
-  }
-
   Future<void> _completeTask(Task task) async {
     if (task.isCompleted) return;
 
     setState(() {
-      task.isCompleted = true;
-      task.completedAt = DateTime.now();
+      // Also saves the date in the task's completion history
+      task.markCompleted();
+      _availableStars += task.stars;
     });
 
     await TaskStorage.updateTask(task);
@@ -116,7 +121,7 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
             const SizedBox(height: 16),
 
             _ProgressCard(
-              stars: _earnedStars,
+              stars: _availableStars,
               completed: completedTasks,
               total: _tasks.length,
             ),
@@ -163,7 +168,7 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
                     ),
                     SizedBox(height: 12),
                     Text(
-                      'No tasks yet',
+                      'No missions today',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -171,7 +176,7 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'Your parent will add tasks for you soon!',
+                      'Enjoy your free time! New missions will show up here.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey,
@@ -191,7 +196,8 @@ class _ChildTasksScreenState extends State<ChildTasksScreen> {
             const SizedBox(height: 12),
 
             _RewardCard(
-              earnedStars: _earnedStars,
+              stars: _availableStars,
+              reward: _nextReward,
             ),
           ],
         ),
@@ -334,17 +340,34 @@ class _TaskCard extends StatelessWidget {
 
 class _RewardCard extends StatelessWidget {
   const _RewardCard({
-    required this.earnedStars,
+    required this.stars,
+    required this.reward,
   });
 
-  final int earnedStars;
+  final int stars;
+
+  // The cheapest reward not given yet (null if the parent set none)
+  final Reward? reward;
 
   @override
   Widget build(BuildContext context) {
-    const requiredStars = 100;
+    final reward = this.reward;
 
-    final progress =
-        (earnedStars / requiredStars).clamp(0.0, 1.0).toDouble();
+    if (reward == null) {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF0B9),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Text(
+          '🎁 No reward set yet — ask your parent to add one!',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      );
+    }
+
+    final starsNeeded = reward.starsNeeded(stars);
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -355,22 +378,32 @@ class _RewardCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '🎁 Next reward',
-            style: TextStyle(
+          Text(
+            '${reward.icon} Next reward: ${reward.title}',
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           LinearProgressIndicator(
-            value: progress,
+            value: reward.progress(stars),
             minHeight: 7,
             borderRadius: BorderRadius.circular(10),
             color: const Color(0xFFE0A900),
             backgroundColor: Colors.white,
           ),
           const SizedBox(height: 6),
-          Text('$earnedStars / $requiredStars stars'),
+          Text(
+            '${stars.clamp(0, reward.requiredStars)} / '
+            '${reward.requiredStars} stars',
+          ),
+          const SizedBox(height: 2),
+          Text(
+            starsNeeded > 0
+                ? 'Only $starsNeeded more stars to go!'
+                : 'You can get this reward! Tell your parent 🎉',
+            style: const TextStyle(color: Colors.black54, fontSize: 13),
+          ),
         ],
       ),
     );
