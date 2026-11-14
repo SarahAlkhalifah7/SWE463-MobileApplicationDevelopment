@@ -1,16 +1,16 @@
+import '../models/task.dart';
 import 'reward_storage.dart';
 import 'task_storage.dart';
 
 // Works out a child's stars from their saved tasks and rewards.
 // Stars are not saved separately, so they can never get out of sync.
 class StarService {
-  // All stars the child has earned from completed tasks
+  // All stars the child has earned from completed tasks.
+  // A repeating task earns its stars every time it is completed.
   static Future<int> getEarnedStars(String childId) async {
     final tasks = await TaskStorage.getTasksForChild(childId);
 
-    return tasks
-        .where((task) => task.isCompleted)
-        .fold<int>(0, (total, task) => total + task.stars);
+    return tasks.totalEarnedStars;
   }
 
   // Stars already spent on rewards the parent has given

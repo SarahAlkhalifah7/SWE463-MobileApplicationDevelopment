@@ -18,11 +18,24 @@ class TaskStorage {
 
     final tasksData = prefs.getStringList(_tasksKey) ?? [];
 
-    return tasksData.map((taskString) {
+    final tasks = tasksData.map((taskString) {
       final Map<String, dynamic> data = jsonDecode(taskString);
 
       return Task.fromJson(data);
     }).toList();
+
+    // Repeating tasks become pending again when their next day comes.
+    // Their completion history is kept, so no stars are lost.
+    final tasksToReset = tasks.where((task) => task.needsReset).toList();
+
+    if (tasksToReset.isNotEmpty) {
+      for (final task in tasksToReset) {
+        task.reset();
+      }
+      await _saveTasks(tasks);
+    }
+
+    return tasks;
   }
 
   // Get the tasks of one child only
@@ -30,6 +43,13 @@ class TaskStorage {
     final tasks = await getTasks();
 
     return tasks.where((task) => task.childId == childId).toList();
+  }
+
+  // Get only the tasks the child should do today
+  static Future<List<Task>> getTodayTasksForChild(String childId) async {
+    final tasks = await getTasksForChild(childId);
+
+    return tasks.forToday;
   }
 
   // Save all tasks

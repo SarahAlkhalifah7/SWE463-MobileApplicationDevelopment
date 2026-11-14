@@ -1,3 +1,4 @@
+import '../models/task.dart';
 import 'task_storage.dart';
 
 class StreakService {
@@ -5,18 +6,9 @@ class StreakService {
   static Future<int> getCurrentStreak(String childId) async {
     final tasks = await TaskStorage.getTasksForChild(childId);
 
-    // Get completion dates only.
-    final completedDates = tasks
-        .where((task) => task.isCompleted && task.completedAt != null)
-        .map(
-          (task) => DateTime(
-            task.completedAt!.year,
-            task.completedAt!.month,
-            task.completedAt!.day,
-          ),
-        )
-        .toSet()
-        .toList();
+    // Every day on which the child completed at least one task
+    // (uses the full history, so repeating tasks count every day).
+    final completedDates = tasks.completionDays.toList();
 
     if (completedDates.isEmpty) {
       return 0;
