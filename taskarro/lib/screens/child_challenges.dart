@@ -73,17 +73,9 @@ class _ChildChallengesScreenState
         .clamp(0.0, 1.0)
         .toDouble();
 
+    // No AppBar here: Child Mode already shows one for every tab
     return Scaffold(
       backgroundColor: const Color(0xFFFFF9F0),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF9F0),
-        elevation: 0,
-        foregroundColor: const Color(0xFF292640),
-        title: const Text(
-          'Challenges',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(

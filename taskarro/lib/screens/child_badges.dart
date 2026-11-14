@@ -102,17 +102,9 @@ class _ChildBadgesScreenState extends State<ChildBadgesScreen> {
     final unlockedCount =
         badges.where((badge) => badge['unlocked'] == true).length;
 
+    // No AppBar here: Child Mode already shows one for every tab
     return Scaffold(
       backgroundColor: const Color(0xFFFFF9F0),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF9F0),
-        elevation: 0,
-        foregroundColor: const Color(0xFF292640),
-        title: const Text(
-          'Achievements & Badges',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -191,7 +183,9 @@ class _ChildBadgesScreenState extends State<ChildBadgesScreen> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.85,
+                // Fixed card height so the text never overflows,
+                // even on narrow phones
+                mainAxisExtent: 240,
               ),
               itemBuilder: (context, index) {
                 final badge = badges[index];
